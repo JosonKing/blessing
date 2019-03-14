@@ -1,0 +1,2 @@
+# blessing
+blessing for anything
