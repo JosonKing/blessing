@@ -35,6 +35,20 @@ def handlePathFile(sourcePath, allowFile = True, parentKey = 'id'):
 
       handlePathFile(child, False, key)
 
+def addAll(sourcePath, allowFile = True, parentKey = 'id'):
+  fileDir = os.listdir(sourcePath)
+  for index, dir in enumerate(fileDir):
+    child = os.path.join('%s\%s' % (sourcePath, dir))
+    if os.path.isfile(child) and allowFile:
+      key = parentKey + (str(index) if index > 9 else '0' + str(index))
+      addFileTree.create_node(dir + '  ' + key, key, parentKey)
+
+    if os.path.isdir(child) and len(os.listdir(child)) > 0:
+      key = parentKey + (str(index) if index > 9 else '0' + str(index))
+      addFileTree.create_node(dir + '  ' + key, key, parentKey)
+
+      addAll(child, False, key)
+
 # 根据key添加父节点
 def createParentNode(key):
   parentKey = key[:-2]
@@ -50,6 +64,7 @@ def createParentNode(key):
 
 # 处理树结构数据
 def handleTree(actionType, key):
+  print('handleTree()')
   if actionType == 'add':
     if addFileTree.contains(parentKey):
       createParentNode(key)
@@ -58,6 +73,10 @@ def handleTree(actionType, key):
       addFileTree.contains(key)
 
   elif actionType == 'rm':
+    print('handleTree rm key:')
+    print(key)
+    print(pathTree.contains(key))
+    print(addFileTree.contains(key))
     addFileTree.remove_node(key)
 
 
@@ -100,37 +119,43 @@ def filesTree(startpath):
         print('{}{}{}{}'.format(file_indent, f, ' ', levelCountArr[level]))
         levelCountArr[level] = levelCountArr[level] + 1
 
+# 展示数据
+def showTree():
+  print('\n所有文件：\n')
+  pathTree.show()
+  print('\n已选文件：\n')
+  addFileTree.show()
+  action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成， *:取消\n请选择操作：指令 文件/文件夹名称id（add id/rm id)\n")
+
 # 根据指令处理文件
 def handleAction(sourcePath, action):
   print('handleAction:' + sourcePath)
   while True:
     if action == 'addall':
-      print('addall')
-      addedFilesArray = handleFile(sourcePath, True)
-      filesTree(filePath)
-      print('\n已选文件：\n')
-      print(addedFilesArray)
-      action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称（add filename/rm filename)\n")
-      print(action)
+      # print('addall')
+      if addFileTree.contains('id'):
+        addFileTree.remove_node('id')
+
+      addAll(sourcePath, Tree, 'id')
+      showTree()
+      # print(action)
     elif action == 'rmall':
-      print('rmall')
-      addedFilesArray = []
-      filesTree(filePath)
-      print('\n已选文件：\n')
-      print(addedFilesArray)
-      action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称（add filename/rm filename)\n")
-      print(action)
+      # print('rmall')
+      addFileTree.remove_node('id')
+      showTree()
+      # print(action)
     elif str(action).startswith('add'):
       # add file
       key = str(action).replace('add ', '')
       handleTree('add', key)
-      action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称（add filename/rm filename)\n")
+      showTree()
       print(action)
     elif str(action).startswith('rm'):
       # rm file
-      fileName = str(action).replace('rm ', '')
-      handleActionFile(sourcePath, 'rm', fileName, True)
-      action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称（add filename/rm filename)\n")
+      print("rm file")
+      key = str(action).replace('rm ', '')
+      handleTree('rm', key)
+      showTree()
       print(action)
     elif action == '#':
       print('选择完毕，开始打包')
@@ -149,7 +174,7 @@ def handleAction(sourcePath, action):
 #       filesTree(filePath)
 #       print('\n已选文件：\n')
 #       print(addedFilesArray)
-#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称（add filename/rm filename)\n")
+#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称id（add filename/rm filename)\n")
 #       print(action)
 #     elif action == 'rmall':
 #       print('rmall')
@@ -157,19 +182,19 @@ def handleAction(sourcePath, action):
 #       filesTree(filePath)
 #       print('\n已选文件：\n')
 #       print(addedFilesArray)
-#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称（add filename/rm filename)\n")
+#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称id（add filename/rm filename)\n")
 #       print(action)
 #     elif str(action).startswith('add'):
 #       # add file
 #       fileName = str(action).replace('add ', '')
 #       handleActionFile(sourcePath, 'add', fileName, True)
-#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称（add filename/rm filename)\n")
+#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称id（add filename/rm filename)\n")
 #       print(action)
 #     elif str(action).startswith('rm'):
 #       # rm file
 #       fileName = str(action).replace('rm ', '')
 #       handleActionFile(sourcePath, 'rm', fileName, True)
-#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称（add filename/rm filename)\n")
+#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称id（add filename/rm filename)\n")
 #       print(action)
 #     elif action == '#':
 #       print('选择完毕，开始打包')
@@ -262,7 +287,7 @@ if __name__ == "__main__":
 
   # 输入路径
   # filePath = input("请输入文件路径：")
-  filePath = 'E:\\code\\github\\antd-admin\\src\\components'
+  filePath = 'D:\\dev\\github\\antd-admin\\src\\components'
   while True:
     if os.path.exists(filePath):
       break
@@ -275,7 +300,7 @@ if __name__ == "__main__":
   pathTree.show()
 
   # 处理文件
-  action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称（add filename/rm filename)\n")
+  action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成， *:取消\n请选择操作：指令 文件/文件夹名称id（add id/rm id)\n")
   handleAction(filePath, action)
 
 
