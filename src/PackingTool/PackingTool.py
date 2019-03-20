@@ -41,13 +41,23 @@ def addAll(sourcePath, allowFile = True, parentKey = 'id'):
     child = os.path.join('%s\%s' % (sourcePath, dir))
     if os.path.isfile(child) and allowFile:
       key = parentKey + (str(index) if index > 9 else '0' + str(index))
-      addFileTree.create_node(dir + '  ' + key, key, parentKey)
+      if not addFileTree.contains(key):
+        addFileTree.create_node(dir + '  ' + key, key, parentKey)
 
     if os.path.isdir(child) and len(os.listdir(child)) > 0:
       key = parentKey + (str(index) if index > 9 else '0' + str(index))
-      addFileTree.create_node(dir + '  ' + key, key, parentKey)
+      if not addFileTree.contains(key):
+        addFileTree.create_node(dir + '  ' + key, key, parentKey)
 
       addAll(child, False, key)
+
+def rmAll(sourcePath):
+  fileDir = os.listdir(sourcePath)
+  for index, dir in enumerate(fileDir):
+    key = 'id' + (str(index) if index > 9 else '0' + str(index))
+    if addFileTree.contains(key):
+      addFileTree.remove_node(key)
+
 
 # 根据key添加父节点
 def createParentNode(key):
@@ -64,7 +74,6 @@ def createParentNode(key):
 
 # 处理树结构数据
 def handleTree(actionType, key):
-  print('handleTree()')
   if actionType == 'add':
     if addFileTree.contains(parentKey):
       createParentNode(key)
@@ -73,13 +82,11 @@ def handleTree(actionType, key):
       addFileTree.contains(key)
 
   elif actionType == 'rm':
-    print('handleTree rm key:')
-    print(key)
-    print(pathTree.contains(key))
-    print(addFileTree.contains(key))
-    addFileTree.remove_node(key)
-
-
+    if not addFileTree.contains(key):
+      print("该模块未选中，无需移除")
+    else:
+      addFileTree.remove_node(key)
+      print("模块移除成功")
 
 # 遍历指定目录，显示目录下的所有文件名
 def eachFile(filePath, allowFile = True):
@@ -87,11 +94,9 @@ def eachFile(filePath, allowFile = True):
   for dir in pathDir:
     child = os.path.join('%s\%s' % (filePath, dir))
     if os.path.isfile(child) and allowFile:
-      # print(child)
       filesArray.append(dir)
 
     if os.path.isdir(child) and len(os.listdir(child)) > 0:
-      # print(child)
       filesArray.append(dir)
 
       childfilesArray = eachFile(child, False)
@@ -100,108 +105,87 @@ def eachFile(filePath, allowFile = True):
 
   return filesArray
 
-# 树状展示文件目录
-def filesTree(startpath):
-  levelCountArr = [1 for i in range(10)]
-  for root, dirs, files in os.walk(startpath):
-    level = root.replace(startpath, '').count(os.sep)
-    dir_indent = "|   " * (level-1) + "|-- "
-    file_indent = "|   " * level + "|-- "
-    if not level:
-      print('.')
-    else:
-      index = levelCountArr[level] if(levelCountArr[level] > 9) else '0' + str(levelCountArr[level])
-      print('{}{}{}{}{}'.format(dir_indent, os.path.basename(root), ' ', level, index))
-      print(levelCountArr)
-      levelCountArr[level] = levelCountArr[level] + 1
-    for f in files:
-      if level == 0:
-        print('{}{}{}{}'.format(file_indent, f, ' ', levelCountArr[level]))
-        levelCountArr[level] = levelCountArr[level] + 1
-
-# 展示数据
-def showTree():
-  print('\n所有文件：\n')
-  pathTree.show()
-  print('\n已选文件：\n')
-  addFileTree.show()
-  action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成， *:取消\n请选择操作：指令 文件/文件夹名称id（add id/rm id)\n")
-
 # 根据指令处理文件
 def handleAction(sourcePath, action):
-  print('handleAction:' + sourcePath)
   while True:
     if action == 'addall':
-      # print('addall')
-      if addFileTree.contains('id'):
-        addFileTree.remove_node('id')
-
+      rmAll(sourcePath)
       addAll(sourcePath, Tree, 'id')
-      showTree()
-      # print(action)
+      print("=====>所有模块添加成功")
+      action = input("\n" + "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "| add: 添加 | rm: 移除 | addall: 添加所有 | rmall:移除所有 | lsm：查看所有模块 | lss：查看已选模块 | lsa： 查看所有模块及已选模块 | #: 完成 | *:取消 |\n" + 
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "请选择操作：指令 模块id（add id/rm id)\n")
     elif action == 'rmall':
-      # print('rmall')
-      addFileTree.remove_node('id')
-      showTree()
-      # print(action)
+      rmAll(sourcePath)
+      action = input("\n" + "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "| add: 添加 | rm: 移除 | addall: 添加所有 | rmall:移除所有 | lsm：查看所有模块 | lss：查看已选模块 | lsa： 查看所有模块及已选模块 | #: 完成 | *:取消 |\n" + 
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "请选择操作：指令 模块id（add id/rm id)\n")
     elif str(action).startswith('add'):
       # add file
       key = str(action).replace('add ', '')
       handleTree('add', key)
-      showTree()
+
+      
+
+      pathTree.show()
+      print('\n已选模块：\n')
+      addFileTree.show()
+      action = input("\n" + "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "| add: 添加 | rm: 移除 | addall: 添加所有 | rmall:移除所有 | lsm：查看所有模块 | lss：查看已选模块 | lsa： 查看所有模块及已选模块 | #: 完成 | *:取消 |\n" + 
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "请选择操作：指令 模块id（add id/rm id)\n")
       print(action)
     elif str(action).startswith('rm'):
       # rm file
-      print("rm file")
       key = str(action).replace('rm ', '')
-      handleTree('rm', key)
-      showTree()
+      if not addFileTree.contains(key):
+        print("=====>该模块未添加，无需移除")
+      else:
+        addFileTree.remove_node(key)
+        print("=====>模块移除成功")
+        
+      action = input("\n" + "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "| add: 添加 | rm: 移除 | addall: 添加所有 | rmall:移除所有 | lsm：查看所有模块 | lss：查看已选模块 | lsa： 查看所有模块及已选模块 | #: 完成 | *:取消 |\n" + 
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "请选择操作：指令 模块id（add id/rm id)\n")
       print(action)
+    elif action == 'lsm':
+      print("\n所有模块：")
+      pathTree.show()
+      action = input("\n" + "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "| add: 添加 | rm: 移除 | addall: 添加所有 | rmall:移除所有 | lsm：查看所有模块 | lss：查看已选模块 | lsa： 查看所有模块及已选模块 | #: 完成 | *:取消 |\n" + 
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "请选择操作：指令 模块id（add id/rm id)\n")
+    elif action == 'lss':
+      print("\n已选模块：")
+      addFileTree.show()
+      action = input("\n" + "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "| add: 添加 | rm: 移除 | addall: 添加所有 | rmall:移除所有 | lsm：查看所有模块 | lss：查看已选模块 | lsa： 查看所有模块及已选模块 | #: 完成 | *:取消 |\n" + 
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "请选择操作：指令 模块id（add id/rm id)\n")
+    elif action == 'lsa':
+      print("\n所有模块：")
+      pathTree.show()
+      print("\n已选模块：")
+      addFileTree.show()
+      action = input("\n" + "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "| add: 添加 | rm: 移除 | addall: 添加所有 | rmall:移除所有 | lsm：查看所有模块 | lss：查看已选模块 | lsa： 查看所有模块及已选模块 | #: 完成 | *:取消 |\n" + 
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "请选择操作：指令 模块id（add id/rm id)\n")
     elif action == '#':
       print('选择完毕，开始打包')
       break
     elif action == '*':
       print('您已取消打包并退出')
       break
-
-# 根据指令处理文件
-# def handleAction(sourcePath, action):
-#   print('handleAction:' + sourcePath)
-#   while True:
-#     if action == 'addall':
-#       print('addall')
-#       addedFilesArray = handleFile(sourcePath, True)
-#       filesTree(filePath)
-#       print('\n已选文件：\n')
-#       print(addedFilesArray)
-#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称id（add filename/rm filename)\n")
-#       print(action)
-#     elif action == 'rmall':
-#       print('rmall')
-#       addedFilesArray = []
-#       filesTree(filePath)
-#       print('\n已选文件：\n')
-#       print(addedFilesArray)
-#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称id（add filename/rm filename)\n")
-#       print(action)
-#     elif str(action).startswith('add'):
-#       # add file
-#       fileName = str(action).replace('add ', '')
-#       handleActionFile(sourcePath, 'add', fileName, True)
-#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称id（add filename/rm filename)\n")
-#       print(action)
-#     elif str(action).startswith('rm'):
-#       # rm file
-#       fileName = str(action).replace('rm ', '')
-#       handleActionFile(sourcePath, 'rm', fileName, True)
-#       action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成\n请选择操作：指令 文件/文件夹名称id（add filename/rm filename)\n")
-#       print(action)
-#     elif action == '#':
-#       print('选择完毕，开始打包')
-#       break
-#     elif action == '*':
-#       print('您已取消打包并退出')
-#       break
+    else:
+      print("无效指令，请重新操作")
+      action = input("\n" + "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "| add: 添加 | rm: 移除 | addall: 添加所有 | rmall:移除所有 | lsm：查看所有模块 | lss：查看已选模块 | lsa： 查看所有模块及已选模块 | #: 完成 | *:取消 |\n" + 
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "请选择操作：指令 模块id（add id/rm id)\n")
 
 # 遍历指定目录，找出对应文件或者文件夹
 def handleFile(sourcePath, allowFile = True):
@@ -243,7 +227,7 @@ def handleActionFile(sourcePath, action, fileName, allowFile = True):
           addedFilesArray.remove(dir)
 
         filesTree(filePath)
-        print('已选文件\n')
+        print('已选模块\n')
         print(addedFilesArray)
 
     elif os.path.isdir(child) and len(os.listdir(child)) > 0:
@@ -255,7 +239,7 @@ def handleActionFile(sourcePath, action, fileName, allowFile = True):
             addedFilesArray.remove(dir)
 
           filesTree(filePath)
-          print('已选文件\n')
+          print('已选模块\n')
           print(addedFilesArray)
 
         else:
@@ -266,20 +250,11 @@ def handleActionFile(sourcePath, action, fileName, allowFile = True):
             addedFilesArray.remove(dir)
 
           filesTree(filePath)
-          print('已选文件\n')
+          print('已选模块\n')
           print(addedFilesArray)
 
       else:
         handleActionFile(child, action, fileName, False)
-
-# 遍历出结果 返回文件的名字
-# def readFile(filenames):
-  # fopen = open(filenames, 'r', encoding='UTF-8')  # r 代表read
-  # fileread = fopen.read()
-  # fopen.close()
-  #
-  # print("匹配到的文件是:"+fileread)
-  # filesArray.append(fileread)
 
 if __name__ == "__main__":
   # filePath = 'D:\\dev\\github\\antd-admin\\src\\components'  # refer root dir
@@ -294,13 +269,16 @@ if __name__ == "__main__":
     else:
       filePath = input("该目录不存在，请重新输入：")
 
-  # # 查看文件  
+  # # 查看模块  
   # filesTree(filePath)
   handlePathFile(filePath)
   pathTree.show()
 
-  # 处理文件
-  action = input("\nadd: 添加， rm: 移除， addall: 添加所有， rmall:移除所有， #: 完成， *:取消\n请选择操作：指令 文件/文件夹名称id（add id/rm id)\n")
+  # 处理模块
+  action = input("\n" + "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "| add: 添加 | rm: 移除 | addall: 添加所有 | rmall:移除所有 | lsm：查看所有模块 | lss：查看已选模块 | lsa： 查看所有模块及已选模块 | #: 完成 | *:取消 |\n" + 
+        "+----------------------------------------------------------------------------------------------------------------------------------------------------+\n" +
+        "请选择操作：指令 模块id（add id/rm id)\n")
   handleAction(filePath, action)
 
 
