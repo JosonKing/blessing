@@ -6,6 +6,9 @@ import shutil
 import re
 from treelib import Node, Tree
 
+import tkinter as tk
+from tkinter import filedialog
+
 '''
 1、读取指定目录下的所有文件
 2、匹配出需要的文件
@@ -23,11 +26,12 @@ actionTip = "\n+----------------------------------------------------------------
 actionResponse = "[请选择操作]$ "
 
 # 遍历指定目录下所有文件，生成文件目录 pathTree
-def handlePathFile(sourcePath, allowFile = True, parentKey = 'id'):
+def handlePathFile(sourcePath, parentKey = 'id'):
   fileDir = os.listdir(sourcePath)
   for index, dir in enumerate(fileDir):
     child = os.path.join('%s\%s' % (sourcePath, dir))
-    if os.path.isfile(child) and allowFile:
+    # if os.path.isfile(child) and len(os.listdir(child)) > 0:
+    if os.path.isfile(child):
       key = parentKey + (str(index) if index > 9 else '0' + str(index))
       pathTree.create_node(dir + '  ' + key, key, parentKey)
 
@@ -35,13 +39,13 @@ def handlePathFile(sourcePath, allowFile = True, parentKey = 'id'):
       key = parentKey + (str(index) if index > 9 else '0' + str(index))
       pathTree.create_node(dir + '  ' + key, key, parentKey)
 
-      handlePathFile(child, False, key)
+      handlePathFile(child, key)
 
-def addAll(sourcePath, allowFile = True, parentKey = 'id'):
+def addAll(sourcePath, parentKey = 'id'):
   fileDir = os.listdir(sourcePath)
   for index, dir in enumerate(fileDir):
     child = os.path.join('%s\%s' % (sourcePath, dir))
-    if os.path.isfile(child) and allowFile:
+    if os.path.isfile(child):
       key = parentKey + (str(index) if index > 9 else '0' + str(index))
       if not addFileTree.contains(key):
         addFileTree.create_node(dir + '  ' + key, key, parentKey)
@@ -51,7 +55,7 @@ def addAll(sourcePath, allowFile = True, parentKey = 'id'):
       if not addFileTree.contains(key):
         addFileTree.create_node(dir + '  ' + key, key, parentKey)
 
-      addAll(child, False, key)
+      addAll(child, key)
 
 def rmAll(sourcePath):
   fileDir = os.listdir(sourcePath)
@@ -60,36 +64,75 @@ def rmAll(sourcePath):
     if addFileTree.contains(key):
       addFileTree.remove_node(key)
 
-
-# 根据key添加父节点
-def createParentNode(key):
-  parentKey = key[:-2]
-  if addFileTree.contains(parentKey):
-    addFileTree.create_node(pathTree.nodes[key].tag, key, parentKey)
-  else:
-    keyLen = len(key)
-    curLen = 4
-    while curLen < keyLen:
-      if addFileTree.contains(key[:curLen]) and not addFileTree.contains(key[:curLen + 2]):
-        addFileTree.create_node(pathTree.nodes[key[:curLen + 2]].tag, key[:curLen + 2], key[:curLen])
-
 # 添加树节点
 def addNode(key):
-  if len(key) == 4 and pathTree.contains(key):
-    name = 
-    addFileTree.create_node()
-  if addFileTree.contains(parentKey):
-    createParentNode(key)
-    addFileTree.show()
+  node = pathTree.get_node(key)
+  print(Node.is_leaf(node))
+  name = pathTree.get_node(key).tag
+  if len(key) == 4:
+    addFileTree.create_node(name, key, "id")
   else:
-    addFileTree.contains(key)
+    treeDeep = int(len(key) / 2)
+    keyArray = [key[0 : i * 2 + 4] for i in range(treeDeep - 1)]
+    for key in keyArray:
+      if not addFileTree.contains(key):
+        addFileTree.create_node(pathTree.get_node(key).tag, key, key[:-2])
+
+# 选择打包存放路径
+def pack():
+  root = tk.Tk()
+  root.withdraw()
+  
+  packPath = filedialog.askdirectory()
+  print(packPath)
+  print('打包中...')
+
+  # allNodes = Tree.all_nodes(addFileTree)
+  # for node in allNodes:
+  #   # print(node)
+  #   # print(Node.is_leaf(node))
+  #   if Node.is_leaf(node):
+  #     nodePath = Tree.rsearch(addFileTree, node.identifier, filter=None)
+  #     print(nodePath)
+  #     sourcePath = os.path.join(filePath, node.tag)
+  #     # shutil.copy()
+
+  leafPathList = Tree.paths_to_leaves(addFileTree)
+
+  for pathList in leafPathList:
+    curLeafPath = filePath
+    targetLeafPath = packPath
+    for path  in pathList:
+      if path != 'id':
+        pathName = addFileTree.get_node(path).tag[:-(len(path) + 2)]
+        curLeafPath = os.path.join(curLeafPath, pathName)
+        targetLeafPath  = os.path.join(targetLeafPath, pathName)
+
+    print(curLeafPath)
+    print(targetLeafPath)
+    targetLeafPath = targetLeafPath.replace('/', '\\')
+    if curLeafPath.find('.') == -1:
+      print('copy dir')
+      print(curLeafPath.find('.'))
+      print(curLeafPath)
+      print(targetLeafPath)
+      shutil.copytree(curLeafPath, targetLeafPath)
+    else:
+      print('copy file')
+      print(curLeafPath.find('.'))
+      print(curLeafPath)
+      print(targetLeafPath)
+      shutil.copy(curLeafPath, targetLeafPath)
+      
+
+  print('打包完成')
 
 # 根据指令处理文件
 def handleAction(sourcePath, action):
   while True:
     if action == 'addall':
       rmAll(sourcePath)
-      addAll(sourcePath, Tree, 'id')
+      addAll(sourcePath, 'id')
       print("=> 所有模块添加成功\n")
       action = input(actionResponse)
     elif action == 'rmall':
@@ -100,7 +143,7 @@ def handleAction(sourcePath, action):
       # add file
       key = str(action).replace('add ', '')
 
-      if len(key) < 4 or not key.startswith('id'):
+      if len(key) < 4 or not key.startswith('id') or not pathTree.contains(key):
         print("=> 该模块不存在\n")
       else:
         addNode(key)
@@ -132,7 +175,8 @@ def handleAction(sourcePath, action):
       addFileTree.show()
       action = input(actionResponse)
     elif action == 'done':
-      print('=> 选择完毕，开始打包\n')
+      print('=> 选择模块完毕，请选择打包文件保存路径\n')
+      pack()
       break
     elif action == 'exit':
       print('=> 您已取消打包并退出\n')
@@ -174,7 +218,7 @@ if __name__ == "__main__":
 
   # 输入路径
   # filePath = input("请输入文件路径：")
-  filePath = 'E:\\code\\github\\antd-admin\\src\\components'
+  filePath = 'D:\\dev\\github\\antd-admin\\src\\components'
   while True:
     if os.path.exists(filePath):
       break
