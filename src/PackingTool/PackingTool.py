@@ -12,7 +12,6 @@ from treelib import Node, Tree
 3、复制到指定位置
 '''
 
-addedFilesArray = []
 filePath = ''
 pathTree = Tree()
 pathTree.create_node("/", "id")
@@ -74,39 +73,16 @@ def createParentNode(key):
       if addFileTree.contains(key[:curLen]) and not addFileTree.contains(key[:curLen + 2]):
         addFileTree.create_node(pathTree.nodes[key[:curLen + 2]].tag, key[:curLen + 2], key[:curLen])
 
-
-# 处理树结构数据
-def handleTree(actionType, key):
-  if actionType == 'add':
-    if addFileTree.contains(parentKey):
-      createParentNode(key)
-      addFileTree.show()
-    else:
-      addFileTree.contains(key)
-
-  elif actionType == 'rm':
-    if not addFileTree.contains(key):
-      print("该模块未选中，无需移除")
-    else:
-      addFileTree.remove_node(key)
-      print("模块移除成功")
-
-# 遍历指定目录，显示目录下的所有文件名
-def eachFile(filePath, allowFile = True):
-  filesArray = []
-  for dir in pathDir:
-    child = os.path.join('%s\%s' % (filePath, dir))
-    if os.path.isfile(child) and allowFile:
-      filesArray.append(dir)
-
-    if os.path.isdir(child) and len(os.listdir(child)) > 0:
-      filesArray.append(dir)
-
-      childfilesArray = eachFile(child, False)
-      if len(childfilesArray) > 0:
-        filesArray.append(childfilesArray)
-
-  return filesArray
+# 添加树节点
+def addNode(key):
+  if len(key) == 4 and pathTree.contains(key):
+    name = 
+    addFileTree.create_node()
+  if addFileTree.contains(parentKey):
+    createParentNode(key)
+    addFileTree.show()
+  else:
+    addFileTree.contains(key)
 
 # 根据指令处理文件
 def handleAction(sourcePath, action):
@@ -123,11 +99,13 @@ def handleAction(sourcePath, action):
     elif str(action).startswith('add'):
       # add file
       key = str(action).replace('add ', '')
-      handleTree('add', key)
 
-      
+      if len(key) < 4 or not key.startswith('id'):
+        print("=> 该模块不存在\n")
+      else:
+        addNode(key)
+        print("=> 模块添加成功\n")
 
-      print("=> 模块添加成功\n")
       action = input(actionResponse)
     elif str(action).startswith('rm'):
       # rm file
@@ -189,52 +167,6 @@ def handleFile(sourcePath, allowFile = True):
         filesArray.append(childfilesArray)
 
   return filesArray
-
-# 遍历指定目录，找出对应文件或者文件夹，并作出对应操作
-def handleActionFile(sourcePath, action, fileName, allowFile = True):
-  fileDir = os.listdir(sourcePath)
-  for dir in fileDir:
-    # print(dir)
-    child = os.path.join('%s\%s' % (sourcePath, dir))
-    # print(child)
-    
-    if os.path.isfile(child) and allowFile:
-      
-      if(str(dir).lower() == str(fileName).lower()):
-        if action == 'add':
-          addedFilesArray.append(dir)
-        elif action == 'rm':
-          addedFilesArray.remove(dir)
-
-        filesTree(filePath)
-        print('已选模块\n')
-        print(addedFilesArray)
-
-    elif os.path.isdir(child) and len(os.listdir(child)) > 0:
-      if(str(dir).lower() == str(fileName).lower()):
-        if allowFile:
-          if action == 'add':
-            addedFilesArray.append(dir)
-          elif action == 'rm':
-            addedFilesArray.remove(dir)
-
-          filesTree(filePath)
-          print('已选模块\n')
-          print(addedFilesArray)
-
-        else:
-          print('level not 1 rm')
-          if action == 'add':
-            addedFilesArray.append(dir)
-          elif action == 'rm':
-            addedFilesArray.remove(dir)
-
-          filesTree(filePath)
-          print('已选模块\n')
-          print(addedFilesArray)
-
-      else:
-        handleActionFile(child, action, fileName, False)
 
 if __name__ == "__main__":
   # filePath = 'D:\\dev\\github\\antd-admin\\src\\components'  # refer root dir
