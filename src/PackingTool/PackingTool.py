@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 3.x
 # encoding: utf-8
 
 import os.path
