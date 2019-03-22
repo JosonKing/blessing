@@ -8,6 +8,7 @@ from treelib import Node, Tree
 
 import tkinter as tk
 from tkinter import filedialog
+import zipfile
 
 '''
 1、读取指定目录下的所有文件
@@ -28,10 +29,16 @@ actionResponse = "[请选择操作]$ "
 # 遍历指定目录下所有文件，生成文件目录 pathTree
 def handlePathFile(sourcePath, parentKey = 'id'):
   fileDir = os.listdir(sourcePath)
+  hasDir = False
+  # for item in fileDir:
+  #   if os.path.isdir(os.path.join('%s\%s' % (sourcePath, item))):
+  #     hasDir = True
+  #     break
+
   for index, dir in enumerate(fileDir):
     child = os.path.join('%s\%s' % (sourcePath, dir))
-    # if os.path.isfile(child) and len(os.listdir(child)) > 0:
     if os.path.isfile(child):
+      print(len(os.listdir(sourcePath)))
       key = parentKey + (str(index) if index > 9 else '0' + str(index))
       pathTree.create_node(dir + '  ' + key, key, parentKey)
 
@@ -43,6 +50,12 @@ def handlePathFile(sourcePath, parentKey = 'id'):
 
 def addAll(sourcePath, parentKey = 'id'):
   fileDir = os.listdir(sourcePath)
+  hasDir = False
+  # for item in fileDir:
+  #   if os.path.isdir(os.path.join('%s\%s' % (sourcePath, item))):
+  #     hasDir = True
+  #     break
+
   for index, dir in enumerate(fileDir):
     child = os.path.join('%s\%s' % (sourcePath, dir))
     if os.path.isfile(child):
@@ -78,6 +91,20 @@ def addNode(key):
       if not addFileTree.contains(key):
         addFileTree.create_node(pathTree.get_node(key).tag, key, key[:-2])
 
+# 压缩指定文件夹
+# param dirPath: 目标文件夹路径
+# param outFullName: 压缩文件保存路径+xxxx.zip
+# return: 无
+def zipDir(dirPath, outFullName):
+    zip = zipfile.ZipFile(outFullName,"w",zipfile.ZIP_DEFLATED)
+    for path,dirnames,filenames in os.walk(dirPath):
+        # 去掉目标跟路径，只对目标文件夹下边的文件及文件夹进行压缩
+        fpath = path.replace(dirPath,'')
+
+        for filename in filenames:
+            zip.write(os.path.join(path,filename),os.path.join(fpath,filename))
+    zip.close()
+
 # 选择打包存放路径
 def pack():
   root = tk.Tk()
@@ -86,16 +113,6 @@ def pack():
   packPath = filedialog.askdirectory()
   print(packPath)
   print('打包中...')
-
-  # allNodes = Tree.all_nodes(addFileTree)
-  # for node in allNodes:
-  #   # print(node)
-  #   # print(Node.is_leaf(node))
-  #   if Node.is_leaf(node):
-  #     nodePath = Tree.rsearch(addFileTree, node.identifier, filter=None)
-  #     print(nodePath)
-  #     sourcePath = os.path.join(filePath, node.tag)
-  #     # shutil.copy()
 
   leafPathList = Tree.paths_to_leaves(addFileTree)
 
@@ -112,20 +129,21 @@ def pack():
     print(targetLeafPath)
     targetLeafPath = targetLeafPath.replace('/', '\\')
     if curLeafPath.find('.') == -1:
-      print('copy dir')
-      print(curLeafPath.find('.'))
-      print(curLeafPath)
-      print(targetLeafPath)
       shutil.copytree(curLeafPath, targetLeafPath)
     else:
-      print('copy file')
-      print(curLeafPath.find('.'))
-      print(curLeafPath)
-      print(targetLeafPath)
-      shutil.copy(curLeafPath, targetLeafPath)
-      
+      targetLeafParent = os.path.split(targetLeafPath)[0]
+      if os.path.exists(targetLeafParent):
+        shutil.copy(curLeafPath, targetLeafPath)
+      else:
+        os.makedirs(targetLeafParent) 
+        shutil.copy(curLeafPath, targetLeafPath)
 
-  print('打包完成')
+  print('\n打包完成，开始压缩文件...')
+  
+  outZipPath = os.path.join(packPath, 'dist.zip')
+  zipDir(packPath, outZipPath)
+      
+  print('\n打包完成，模块输出路径：' + packPath + '/ dist.zip')
 
 # 根据指令处理文件
 def handleAction(sourcePath, action):
@@ -218,7 +236,7 @@ if __name__ == "__main__":
 
   # 输入路径
   # filePath = input("请输入文件路径：")
-  filePath = 'D:\\dev\\github\\antd-admin\\src\\components'
+  filePath = 'E:\\code\\github\\antd-admin\\src\\components'
   while True:
     if os.path.exists(filePath):
       break
